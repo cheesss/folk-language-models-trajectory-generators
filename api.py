@@ -9,7 +9,7 @@ from realsenseCapture import IntelCamera
 from PIL import Image
 from prompts.success_detection_prompt import SUCCESS_DETECTION_PROMPT
 from config import OK, PROGRESS, FAIL, ENDC
-from config import CAPTURE_IMAGES, ADD_BOUNDING_CUBES, ADD_TRAJECTORY_POINTS, EXECUTE_TRAJECTORY, OPEN_GRIPPER, CLOSE_GRIPPER, TASK_COMPLETED, RESET_ENVIRONMENT
+from config import CAPTURE_IMAGES, ADD_BOUNDING_CUBES, ADD_TRAJECTORY_POINTS, EXECUTE_TRAJECTORY, OPEN_GRIPPER, CLOSE_GRIPPER, SUCTION, TASK_COMPLETED, RESET_ENVIRONMENT
 # 멀티프로세싱 넘버 불러오기
 from io import StringIO
 from contextlib import redirect_stdout
@@ -161,7 +161,10 @@ class API:
         self.logger.info(PROGRESS + "Closing gripper..." + ENDC)
         self.main_connection.send([CLOSE_GRIPPER])
 
+    def suction(self):
 
+        self.logger.info(PROGRESS + "suction..." + ENDC)
+        self.main_connection.send([SUCTION])
 
     def task_completed(self):
 

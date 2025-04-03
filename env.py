@@ -5,7 +5,7 @@ import time
 import config
 from robot import Robot
 from config import OK, PROGRESS, FAIL, ENDC
-from config import CAPTURE_IMAGES, ADD_BOUNDING_CUBES, ADD_TRAJECTORY_POINTS, EXECUTE_TRAJECTORY, OPEN_GRIPPER, CLOSE_GRIPPER, TASK_COMPLETED, RESET_ENVIRONMENT
+from config import CAPTURE_IMAGES, ADD_BOUNDING_CUBES, ADD_TRAJECTORY_POINTS, EXECUTE_TRAJECTORY, OPEN_GRIPPER, CLOSE_GRIPPER, SUCTION, TASK_COMPLETED, RESET_ENVIRONMENT
 import random
 import math
 
@@ -18,6 +18,7 @@ class Environment:
     def __init__(self, args):
 
         self.mode = args.mode
+        self.obj_ids = []
 
     def load(self):
 
@@ -25,8 +26,8 @@ class Environment:
 
         object_start_position = config.object_start_position
         object_start_orientation_q = p.getQuaternionFromEuler(config.object_start_orientation_e)
-        object_model = p.loadURDF("ycb_assets/005_tomato_soup_can.urdf",object_start_position, object_start_orientation_q, useFixedBase=False, globalScaling=config.global_scaling)
-
+        obj_id = p.loadURDF("ycb_assets/005_tomato_soup_can.urdf",object_start_position, object_start_orientation_q, useFixedBase=False, globalScaling=config.global_scaling)
+        self.obj_ids.append(obj_id)
         
         # object_start_position = [random.uniform(-0.2, 0.2), random.uniform(0.4, 0.8), 0.1]
         # object_start_orientation_e = [0.0, 0.0, random.uniform(-math.pi, math.pi)]
@@ -112,6 +113,7 @@ def run_simulation_environment(args, env_connection, logger):
 
 
     robot = Robot(args)
+    # args 전달을 통해 무슨 로봇인지 정할수 있다.
     robot.move(env, robot.ee_start_position, robot.ee_start_orientation_e, gripper_open=True, is_trajectory=False)
     # pybullet을 이용한 시뮬레이션 구동 is_trajectory = False인 이유는, 목표점을 향하는 단계가 아니라 처음 실행하는 단계이므로 trajectory_step를 갱신하지 않기 위해서이다.
     env_connection_message = OK + "Finished setting up environment!" + ENDC
@@ -203,6 +205,19 @@ def run_simulation_environment(args, env_connection, logger):
                 robot.move(env, ee_current_position, ee_current_orientation_e, gripper_open=False, is_trajectory=False)
 
                 robot.gripper_open = False
+                
+                
+            elif env_connection_received[0] == SUCTION:
+                ee_current_position = p.getLinkState(robot.id, robot.ee_index, computeForwardKinematics=True)[0]
+                ee_current_orientation_q = p.getLinkState(robot.id, robot.ee_index, computeForwardKinematics=True)[1]
+                ee_current_orientation_e = p.getEulerFromQuaternion(ee_current_orientation_q)
+
+                robot.move(env, ee_current_position, ee_current_orientation_e, gripper_open=False, is_trajectory=False)
+
+                robot.gripper_open = False
+                print("[INFO] SUCTION command received and processed.")
+
+                
 
                 logger.info(OK + "Finished closing gripper!" + ENDC)
 

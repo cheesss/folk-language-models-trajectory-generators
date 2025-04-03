@@ -16,7 +16,7 @@ class Robot:
             self.id = p.loadURDF("sawyer_robot/sawyer_description/urdf/sawyer.urdf", self.base_start_position, self.base_start_orientation_q, useFixedBase=True)
             self.robot = "sawyer"
             self.ee_index = config.ee_index_sawyer
-        elif args.robot == "franka":
+        elif args.robot == "franka" or args.robot == "franka_suction":
             self.base_start_position = config.base_start_position_franka
             self.base_start_orientation_q = p.getQuaternionFromEuler(config.base_start_orientation_e_franka)
             self.joint_start_positions = config.joint_start_positions_franka
@@ -49,7 +49,42 @@ class Robot:
         elif self.robot == "franka":
             gripper1_index = 9
             gripper2_index = 10
+            # gripper index 1,2는 그리퍼 양끝 엔드포인트를 나타낸다.
             gripper_target_position = config.gripper_goal_position_open_franka if gripper_open else config.gripper_goal_position_closed_franka
+            # 여기서 gripper_open이 False로 오면 gripper_goal_position_closed_franka = 0.0005로 설정된다
+        elif self.robot == "franka_suction":
+            gripper1_index = 9
+            gripper2_index = 10
+            gripper_target_position = config.gripper_goal_position_open_franka if gripper_open else config.gripper_goal_position_closed_franka
+
+            ee_pos = p.getLinkState(self.id, self.ee_index, computeForwardKinematics=True)[0]
+            ee_orn = p.getLinkState(self.id, self.ee_index, computeForwardKinematics=True)[1]
+
+            if not hasattr(self, "suction_constraint_id"):
+                self.suction_constraint_id = None
+
+            if not gripper_open and self.suction_constraint_id is None:
+                target_object_id = env.obj_id
+
+                self.suction_constraint_id = p.createConstraint(
+                    parentBodyUniqueId=self.id,
+                    parentLinkIndex=self.ee_index,
+                    childBodyUniqueId=target_object_id,
+                    childLinkIndex=-1,
+                    jointType=p.JOINT_FIXED,
+                    jointAxis=[0, 0, 0],
+                    parentFramePosition=[0, 0, 0],
+                    childFramePosition=[0, 0, 0],
+                    parentFrameOrientation=ee_orn
+                )
+                print("[INFO] Suction grip created.")
+
+            elif gripper_open and self.suction_constraint_id is not None:
+                p.removeConstraint(self.suction_constraint_id)
+                self.suction_constraint_id = None
+                print("[INFO] Suction grip released.")
+
+
 
         min_joint_positions = [p.getJointInfo(self.id, i)[8] for i in range(p.getNumJoints(self.id)) if p.getJointInfo(self.id, i)[2] == p.JOINT_PRISMATIC or p.getJointInfo(self.id, i)[2] == p.JOINT_REVOLUTE]
         max_joint_positions = [p.getJointInfo(self.id, i)[9] for i in range(p.getNumJoints(self.id)) if p.getJointInfo(self.id, i)[2] == p.JOINT_PRISMATIC or p.getJointInfo(self.id, i)[2] == p.JOINT_REVOLUTE]
@@ -83,7 +118,23 @@ class Robot:
                 p.setJointMotorControlArray(self.id, range(7), p.POSITION_CONTROL, targetPositions=target_joint_positions[:-2], forces=[config.arm_movement_force_franka] * 7)
                 p.setJointMotorControl2(self.id, gripper1_index, p.POSITION_CONTROL, targetPosition=gripper_target_position, force=config.gripper_movement_force_franka)
                 p.setJointMotorControl2(self.id, gripper2_index, p.POSITION_CONTROL, targetPosition=gripper_target_position, force=config.gripper_movement_force_franka)
-
+                # 여기서 gripper_target_position을 받고 gripper을 컨트롤 한다 
+            elif self.robot == "franka_suction":
+                p.setJointMotorControlArray(
+                    self.id, range(7), p.POSITION_CONTROL,
+                    targetPositions=target_joint_positions[:-2],
+                    forces=[config.arm_movement_force_franka] * 7
+                )
+                p.setJointMotorControl2(
+                    self.id, gripper1_index, p.POSITION_CONTROL,
+                    targetPosition=gripper_target_position,
+                    force=config.gripper_movement_force_franka
+                )
+                p.setJointMotorControl2(
+                    self.id, gripper2_index, p.POSITION_CONTROL,
+                    targetPosition=gripper_target_position,
+                    force=config.gripper_movement_force_franka
+                )
             env.update()
             self.get_camera_image("head", env, save_camera_image=is_trajectory, rgb_image_path=config.rgb_image_trajectory_path.format(step=self.trajectory_step), depth_image_path=config.depth_image_trajectory_path.format(step=self.trajectory_step))
             if is_trajectory:

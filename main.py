@@ -51,7 +51,7 @@ if __name__ == "__main__":
     # Parse args
     parser = argparse.ArgumentParser(description="Main Program.")
     parser.add_argument("-lm", "--language_model", choices=["gpt-4o-mini", "gpt-4-32k", "gpt-3.5-turbo", "gpt-3.5-turbo-16k"], default="gpt-4o-mini", help="select language model")
-    parser.add_argument("-r", "--robot", choices=["sawyer", "franka"], default="sawyer", help="select robot")
+    parser.add_argument("-r", "--robot", choices=["sawyer", "franka", "franka_suction"], default="franka", help="select robot")
     parser.add_argument("-m", "--mode", choices=["default", "debug"], default="default", help="select mode to run")
     args = parser.parse_args()
 
@@ -103,11 +103,12 @@ if __name__ == "__main__":
     open_gripper = api.open_gripper
     close_gripper = api.close_gripper
     task_completed = api.task_completed
-    
+    suction = api.suction
     
     # Start process
     env_process = Process(target=run_simulation_environment, name="EnvProcess", args=[args, env_connection, logger])
     env_process.start()
+    # 여기로 args를 보내준다
 
     [env_connection_message] = main_connection.recv() # recv means receive data from main_connection
     logger.info(env_connection_message)

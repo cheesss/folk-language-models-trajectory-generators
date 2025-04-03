@@ -20,6 +20,8 @@ You must only write code that uses the following Python functions. Do not attemp
 3. open_gripper() -> None: This function will open the gripper on the robot arm, and will also not return anything.
 4. close_gripper() -> None: This function will close the gripper on the robot arm, and will also not return anything.
 5. task_completed() -> None: Call this function only when the task has been completed. This function will also not return anything.
+6.suction() -> None: This function will activate the suction mechanism on the robot arm’s end-effector to attach to an object. It does not return anything but causes the robot to create a fixed constraint between the end-effector and the target object in the environment, simulating a suction grip. 
+                    This function should be called when the robot is positioned correctly above the object to be picked up. The suction will remain active until explicitly released by opening the gripper or executing a suction release function (if available). Ensure to wait for the execution to finish before proceeding with the next function call. The unit is in metres.
 When calling any of the functions, make sure to stop generation after each function call and wait for it to be executed, before calling another function and continuing with your plan.
 
 ENVIRONMENT SET-UP:
