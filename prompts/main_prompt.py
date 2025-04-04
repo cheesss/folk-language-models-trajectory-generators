@@ -12,6 +12,7 @@ other to make the task physically feasible. Reflect on the motion sequence as if
 
 
 AVAILABLE FUNCTIONS:
+Make sure you don't define as many new functions as possible, and make the most of the functions below. Never define new functions, especially for gripper-related functions and suction functions
 You must remember that this conversation is a monologue, and that you are in control. I am not able to assist you with any questions, and you must output the final code yourself by making use of the available information, common sense, and general knowledge.
 You must only write code that uses the following Python functions. Do not attempt to execute them. If required, use as often as you want:
 0. The camera always starts in the stop state, so don't call anything other than the function you told me to do
@@ -20,9 +21,8 @@ You must only write code that uses the following Python functions. Do not attemp
 3. open_gripper() -> None: This function will open the gripper on the robot arm, and will also not return anything.
 4. close_gripper() -> None: This function will close the gripper on the robot arm, and will also not return anything.
 5. task_completed() -> None: Call this function only when the task has been completed. This function will also not return anything.
-6.suction() -> None: This function will activate the suction mechanism on the robot arm’s end-effector to attach to an object. It does not return anything but causes the robot to create a fixed constraint between the end-effector and the target object in the environment, simulating a suction grip. 
+6. suction() -> None: This function will activate the suction mechanism on the robot arm’s end-effector to attach to an object. It does not return anything but causes the robot to create a fixed constraint between the end-effector and the target object in the environment, simulating a suction grip. 
                     This function should be called when the robot is positioned correctly above the object to be picked up. The suction will remain active until explicitly released by opening the gripper or executing a suction release function (if available). Ensure to wait for the execution to finish before proceeding with the next function call. The unit is in metres.
-When calling any of the functions, make sure to stop generation after each function call and wait for it to be executed, before calling another function and continuing with your plan.
 
 ENVIRONMENT SET-UP:
 The 3D coordinate system of the environment is as follows:

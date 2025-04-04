@@ -16,12 +16,19 @@ class Robot:
             self.id = p.loadURDF("sawyer_robot/sawyer_description/urdf/sawyer.urdf", self.base_start_position, self.base_start_orientation_q, useFixedBase=True)
             self.robot = "sawyer"
             self.ee_index = config.ee_index_sawyer
-        elif args.robot == "franka" or args.robot == "franka_suction":
+        elif args.robot == "franka":
             self.base_start_position = config.base_start_position_franka
             self.base_start_orientation_q = p.getQuaternionFromEuler(config.base_start_orientation_e_franka)
             self.joint_start_positions = config.joint_start_positions_franka
             self.id = p.loadURDF("franka_robot/panda.urdf", self.base_start_position, self.base_start_orientation_q, useFixedBase=True)
             self.robot = "franka"
+            self.ee_index = config.ee_index_franka
+        elif args.robot == "franka_suction":
+            self.base_start_position = config.base_start_position_franka
+            self.base_start_orientation_q = p.getQuaternionFromEuler(config.base_start_orientation_e_franka)
+            self.joint_start_positions = config.joint_start_positions_franka
+            self.id = p.loadURDF("franka_robot/panda.urdf", self.base_start_position, self.base_start_orientation_q, useFixedBase=True)
+            self.robot = "franka_suction"
             self.ee_index = config.ee_index_franka
         self.ee_start_position = config.ee_start_position
         self.ee_start_orientation_e = config.ee_start_orientation_e
@@ -47,12 +54,14 @@ class Robot:
             gripper2_index = None
             gripper_target_position = config.gripper_goal_position_open_sawyer if gripper_open else config.gripper_goal_position_closed_sawyer
         elif self.robot == "franka":
+            print("franka is selected.")
             gripper1_index = 9
             gripper2_index = 10
             # gripper index 1,2는 그리퍼 양끝 엔드포인트를 나타낸다.
             gripper_target_position = config.gripper_goal_position_open_franka if gripper_open else config.gripper_goal_position_closed_franka
             # 여기서 gripper_open이 False로 오면 gripper_goal_position_closed_franka = 0.0005로 설정된다
         elif self.robot == "franka_suction":
+            print("franka_suction is selected.")
             gripper1_index = 9
             gripper2_index = 10
             gripper_target_position = config.gripper_goal_position_open_franka if gripper_open else config.gripper_goal_position_closed_franka
@@ -64,8 +73,8 @@ class Robot:
                 self.suction_constraint_id = None
 
             if not gripper_open and self.suction_constraint_id is None:
-                target_object_id = env.obj_id
-
+                target_object_id = env.obj_ids[0]  # 리스트의 첫 번째 객체를 사용
+                print(f"gripper_open: {gripper_open}, target_object_id: {target_object_id}")
                 self.suction_constraint_id = p.createConstraint(
                     parentBodyUniqueId=self.id,
                     parentLinkIndex=self.ee_index,

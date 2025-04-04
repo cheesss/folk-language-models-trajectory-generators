@@ -54,7 +54,7 @@ if __name__ == "__main__":
     parser.add_argument("-r", "--robot", choices=["sawyer", "franka", "franka_suction"], default="franka", help="select robot")
     parser.add_argument("-m", "--mode", choices=["default", "debug"], default="default", help="select mode to run")
     args = parser.parse_args()
-
+    print(f"args: {args}")
     # Logging
     logger = multiprocessing.log_to_stderr()
     logger.setLevel(logging.INFO)
