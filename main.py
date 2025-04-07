@@ -170,11 +170,13 @@ if __name__ == "__main__":
                     if "```" in block:
                         code = block.split("```")[0].strip()  # 코드만 깔끔하게 추출
                         save_code_block_to_file(code)        # 저장 함수 호출
+                        save_code_block_to_file("//////")
                         block_number += 1
                         try:
                             f = StringIO()
                             with redirect_stdout(f):
                                 exec(code)
+                                print(11111111111111111111111111111111111111)
                     # 여기서 받은 코드를 실행하는듯 하다.
                     # 만약 llm이 detect_object("box")를 실행하기로 결정한다면, 위에서 정의한 detect_object = api.detect_object가 실행된다.
                         except Exception:
@@ -183,15 +185,17 @@ if __name__ == "__main__":
                             # 에러메세지를 다시 전달한다. 
                             new_prompt += "\n"
                             error = True
+                            print(22222222222222222222222222222222222222222)
                         else:
                             s = f.getvalue()
                             error = False
                             if s != "" and len(s) < 2000:
                                 print(f"s is: {s}")
-                                new_prompt_2 = PRINT_OUTPUT_PROMPT.replace("[INSERT PRINT STATEMENT OUTPUT]", s)
+                                new_prompt = PRINT_OUTPUT_PROMPT.replace("[INSERT PRINT STATEMENT OUTPUT]", s)
                                 # 여기에 출력 또는 앞 코드 실행 결과가 저장된다.
-                                new_prompt_2 += "\n"
+                                new_prompt += "\n"
                                 error = True
+                                print(3333333333333333333333333333333333333333333333333333)
                             
             if error:
 
@@ -262,7 +266,7 @@ if __name__ == "__main__":
                         client=client,
                         thread_id=thread.id,
                         assistant_id=assistant.id,
-                        prompt=new_prompt_2,
+                        prompt=new_prompt,
                         logger=logger  # 기존 로깅도 그대로 사용 가능
                     )
 

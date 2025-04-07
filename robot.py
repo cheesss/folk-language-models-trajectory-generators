@@ -145,7 +145,7 @@ class Robot:
                     force=config.gripper_movement_force_franka
                 )
             env.update()
-            self.get_camera_image("head", env, save_camera_image=is_trajectory, rgb_image_path=config.rgb_image_trajectory_path.format(step=self.trajectory_step), depth_image_path=config.depth_image_trajectory_path.format(step=self.trajectory_step))
+            self.get_camera_image("head", env, save_camera_image=is_trajectory, rgb_image_path=config.rgb_image_head_path, depth_image_path=config.depth_image_head_path)
             if is_trajectory:
                 self.trajectory_step += 1
 

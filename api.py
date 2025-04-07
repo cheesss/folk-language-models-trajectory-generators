@@ -14,6 +14,7 @@ from config import CAPTURE_IMAGES, ADD_BOUNDING_CUBES, ADD_TRAJECTORY_POINTS, EX
 from io import StringIO
 from contextlib import redirect_stdout
 
+depth_scale = 0.0010000000474974513
 def save_code_block_to_file(code_block, file_name="code_blocks.txt"):
     with open(file_name, "a") as file:
         file.write(str(code_block))  # 코드 블록을 파일에 저장
@@ -61,42 +62,44 @@ class API:
         self.wrist_camera_orientation_q = wrist_camera_orientation_q
 
         # 원본 코드
-        rgb_image_head = Image.open(config.rgb_image_head_path).convert("RGB")
-        depth_image_head = Image.open(config.depth_image_head_path).convert("L")
-        
+        # rgb_image_head = Image.open(config.rgb_image_head_path).convert("RGB")
+        # depth_image_head = Image.open(config.depth_image_head_path).convert("L")
 
         # realsense 적용코드
-        # IntelCamera.capture_save_image()
-        # rgb_image_head_path = config.Intel_rgb_image_head_path
-        # rgb_image_head = Image.open(rgb_image_head_path).convert("RGB")
+        rgba_image, depth_image, depth_intrinsics = IntelCamera.capture_save_image()
+        rgb_image_head_path = config.rgb_image_head_path
+        rgb_image_head = Image.open(rgb_image_head_path).convert("RGB")
 
-        # depth_image_head_path = config.Intel_depth_image_head_path
-        # depth_image_head = Image.open(depth_image_head_path).convert("L")
-        depth_array = np.array(depth_image_head) / 255
+        depth_image_head_path = config.depth_image_head_path
+        depth_image_head = Image.open(depth_image_head_path).convert("L")
+        depth_array = np.array(depth_image_head) * depth_scale
         # depth_array = depth_image_head
-        self.logger.info("depth_array min is "+str(np.average(depth_array)))
-        # ndc데이터는 비선형이므로, 이를 실제 시각 거리로 바꿔준 후, 256개로 나눠 깊이를 직관적으로 볼 수 있게 바꾼다.
-
+        # self.logger.info("depth_array min is "+str(np.average(depth_array)))
 
 
         if self.segmentation_count == 0:
-            # 계속 검은색 이미지가 저장되는거보니, self.segmentation_count ==0 ->true인것 같은데, 이게 무슨 변수일까?
             xmem_image = Image.fromarray(np.zeros_like(depth_array)).convert("L")
             xmem_image.save(config.xmem_input_path)
-            # 흑백으로 변환하여 저장
-        segmentation_texts = [segmentation_text]
 
+        segmentation_texts = [segmentation_text]
+        # point = ["."]
+        # segmentation_text = segmentation_texts + point
         self.logger.info(PROGRESS + "Segmenting head camera image..." + ENDC)
+        # print("this is test", rgb_image_head, self.langsam_model, segmentation_texts, self.segmentation_count)
+        # self.logger.info("segmantation_texts: " + str(segmentation_texts)+ str(type(segmentation_texts)))
+        self.logger.info("segmentation_texts: "+ str(segmentation_text))
+        print("segmentation_texts: ", segmentation_texts)
         model_predictions, boxes, segmentation_texts = models.get_langsam_output(rgb_image_head, self.langsam_model, segmentation_texts, self.segmentation_count)
         self.logger.info(OK + "Finished segmenting head camera image!" + ENDC)
 
         masks = utils.get_segmentation_mask(model_predictions, config.segmentation_threshold)
-        self.logger.info("mask reasult is "+ str(masks))
+        # self.logger.info("mask reasult is "+ str(masks))
 
         # 예측결과를 이진화하여(True, False) 마스크 내부 예측 결과를 확정한다.
 
-        bounding_cubes_world_coordinates, bounding_cubes_orientations = utils.get_bounding_cube_from_point_cloud(rgb_image_head, masks, depth_array, self.head_camera_position, self.head_camera_orientation_q, self.segmentation_count)
+        bounding_cubes_world_coordinates, bounding_cubes_orientations,contour_pixel_points = utils.get_bounding_cube_from_point_cloud(rgb_image_head, masks, depth_array, self.head_camera_position, self.head_camera_orientation_q, depth_image, depth_intrinsics, self.segmentation_count)
         # 여기서 주는 depth array가 거리 관련 데이터인듯
+        # self.logger.info("bounding_cubes_world_coordinates: "+str(bounding_cubes_world_coordinates))
 
         utils.save_xmem_image(masks)
 
@@ -133,8 +136,6 @@ class API:
                 print("Orientation along longer side (width):", np.around(bounding_cubes_orientations[i][0], 3), "\n")
 
         self.segmentation_count += 1
-        # 한개 찾고나면 segmentation_count 한개 올린다.
-        self.logger.info(f"segmentation count: {self.segmentation_count}")
 
 
     def execute_trajectory(self, trajectory):
@@ -205,8 +206,12 @@ class API:
                 for i, mask in enumerate(masks):
                     # enumeratesms mask 내부의 인덱스와 데이터를 동시에 불러온다.
 
-                    rgb_image = Image.open(config.rgb_image_trajectory_path.format(step=i * config.xmem_output_every)).convert("RGB")
-                    depth_image = Image.open(config.depth_image_trajectory_path.format(step=i * config.xmem_output_every)).convert("L")
+                    # rgb_image = Image.open(config.rgb_image_trajectory_path.format(step=i * config.xmem_output_every)).convert("RGB")
+                    # depth_image = Image.open(config.depth_image_trajectory_path.format(step=i * config.xmem_output_every)).convert("L")
+                    # 원본코드
+
+                    rgb_image = Image.open(config.rgb_image_path.format(step=i * config.xmem_output_every)).convert("RGB")
+                    depth_image = Image.open(config.depth_image_path.format(step=i * config.xmem_output_every)).convert("L")
                     depth_array = np.array(depth_image) / 255.
 
                     object_mask = mask.copy()

@@ -42,8 +42,10 @@ global_scaling = 0.08
 
 # Camera
 fov, aspect, near_plane, far_plane = 60, 1.0, 0.01, 100
-image_width = 256
-image_height = 256
+# image_width = 256
+# image_height = 256
+image_width = 640
+image_height = 480
 
 head_camera_position = [0.0, 1.2, 0.6]
 
@@ -91,15 +93,15 @@ SUCTION = 9
 # Paths
 rgb_image_wrist_path = "./images/rgb_image_wrist.png"
 depth_image_wrist_path = "./images/depth_image_wrist.png"
-rgb_image_head_path = "./images/rgb_image_head.png"
-depth_image_head_path = "./images/depth_image_head.png"
+# rgb_image_head_path = "./images/rgb_image_head.png"
+# depth_image_head_path = "./images/depth_image_head.png"
 
-Intel_rgb_image_head_path = "./captured_image.jpg"
-Intel_depth_image_head_path = "./captured_depth_image.jpg"
+rgb_image_head_path = "./captured_image.png"
+depth_image_head_path = "./captured_depth_image.png"
 
 
-rgb_image_trajectory_path = "./images/trajectory/rgb_image_{step}.png"
-depth_image_trajectory_path = "./images/trajectory/depth_image_{step}.png"
+# rgb_image_trajectory_path = "./images/trajectory/rgb_image_{step}.png"
+# depth_image_trajectory_path = "./images/trajectory/depth_image_{step}.png"
 bounding_cube_mask_image_path = "./images/bounding_cube_mask_{object}_{mask}.png"
 bounding_cube_image_path = "./images/bounding_cube_image_{object}.png"
 

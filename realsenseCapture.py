@@ -4,31 +4,29 @@ import pyrealsense2 as rs
 import numpy as np
 import open3d as o3d
 from PIL import Image
+import multiprocessing
+import logging
 
 class IntelCamera:
     def __init__(self, image):
         self.image = image
         
-
     def save_RGB_img(image):
         # RGB 이미지를 JPEG 파일로 저장
-        cv2.imwrite("captured_image.jpg", image)
-        print("RGB image saved as 'captured_image.jpg'")
+        cv2.imwrite("captured_image.png", image)
+        # print("RGB image saved as 'captured_image.png'")
 
-    def save_Depth_img(depth_image, depth_scale):
-        depth_image_normalized = (depth_image / depth_scale).astype(np.float32)
-        # depth_image_normalized = np.clip(depth_image_normalized, 0, 1)  # 클리핑
-
-        depth_image_uint8 = np.clip(depth_image_normalized * 255, 0, 255).astype(np.uint8)
-
-        # Convert NumPy array to PIL Image in grayscale ('L') mode
-        depth_image_pil = Image.fromarray(depth_image_uint8, mode='L')
-
-        # Save as JPEG
-        depth_image_pil.save("captured_depth_image.jpg")
-        print("Depth image saved as 'captured_depth_image.jpg'")
+    def save_Depth_img(depth_image):
+        
+        cv2.imwrite("captured_depth_image.png", depth_image)
+        # print("Depth image saved as 'captured_depth_image.png'")
     
     def capture_save_image():
+
+        # Logging
+        # logger = multiprocessing.log_to_stderr()
+        # logger.setLevel(logging.INFO)
+
         pipeline = rs.pipeline()
         config = rs.config()
         
@@ -38,41 +36,36 @@ class IntelCamera:
         profile = pipeline.start(config)
         depth_sensor = profile.get_device().first_depth_sensor()
         depth_scale = depth_sensor.get_depth_scale()
-        print(f"Depth Scale: {depth_scale} meters per unit")
+        depth_stream = profile.get_stream(rs.stream.depth)
+        depth_intrinsics = depth_stream.as_video_stream_profile().get_intrinsics()
+
+        # print(f"Depth Scale: {depth_scale} meters per unit")
         align = rs.align(rs.stream.color)
 
         try:
             # pipeline.start(config)
 
             # 프레임 읽기
-            frames = pipeline.wait_for_frames()
-            frames = align.process(frames)
-            color_frame = frames.get_color_frame()
-            depth_frame = frames.get_depth_frame()
+            for _ in range(37):
+                frames = pipeline.wait_for_frames()
+                frames = align.process(frames)
+                color_frame = frames.get_color_frame()
+                depth_frame = frames.get_depth_frame()
 
             if not color_frame:
                 print("No color frame captured!")
-                return
 
             color_image = np.asanyarray(color_frame.get_data())
             depth_image = np.asanyarray(depth_frame.get_data())
-
-            threading.Thread(target=IntelCamera.save_RGB_img, args=(color_image,)).start()
-            threading.Thread(target=IntelCamera.save_Depth_img, args=(depth_image, depth_scale)).start()
-
-            # 굳이 필요없음
+            alpha_channel = np.full((color_image.shape[0], color_image.shape[1], 1), 255, dtype=np.uint8)
+            rgba_image = np.concatenate((color_image, alpha_channel), axis=-1)
             # cv2.imshow('Captured Image', color_image)
-
-            # while True:
-            #     key = cv2.waitKey(1) 
-            #     if key == 27:  # ESC 키를 누르면 종료
-            #         break
-            #     if cv2.getWindowProperty('Captured Image', cv2.WND_PROP_VISIBLE) < 1:
-            #         break
-
-            # # 창 닫기
-            # cv2.destroyAllWindows()
-
+            threading.Thread(target=IntelCamera.save_RGB_img, args=(color_image,)).start()
+            threading.Thread(target=IntelCamera.save_Depth_img, args=(depth_image,)).start()
+            return rgba_image, depth_image, depth_intrinsics
     # 리턴값 없이 촬영한 사진을 저장한 후 불러와 사용한다.
         finally:
             pipeline.stop()
+            
+            
+# a = IntelCamera.capture_save_image()

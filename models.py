@@ -15,6 +15,8 @@ import json
 import multiprocessing
 from PIL import Image
 import time
+import base64
+import main
 
 sys.path.append("./XMem/")
 load_dotenv("openaiAPI.env")
@@ -97,9 +99,83 @@ def memory_chatgpt_output(client, thread_id, assistant_id, prompt, logger):
 
 
 
+def encode_image(image_path):
+    if image_path.startswith("http://") or image_path.startswith("https://"):
+        raise ValueError("URL은 base64 인코딩할 수 없습니다.")
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode('utf-8')
 
 
+# ===============================================================================================================
 
+
+def memory_chatgpt_output_with_image(client, thread_id, assistant_id, prompt,
+                                     image_path=None, logger=None):
+    message_content = [{"type": "text", "text": prompt}]
+
+    # 이미지가 제공된 경우에만 처리
+    if image_path:
+        try:
+            # URL인지 로컬 경로인지 구분
+            if image_path.startswith("http://") or image_path.startswith("https://"):
+                image_url = image_path  # 그대로 사용
+            else:
+                base64_image = encode_image(image_path)
+                image_url = f"data:image/jpeg;base64,{base64_image}"
+
+            # 이미지 메시지 추가
+            message_content.append({
+                "type": "image_url",
+                "image_url": {
+                    "url": image_url,
+                    "detail": "high"
+                }
+            })
+        except Exception as e:
+            if logger:
+                logger.warning(f"이미지 처리 중 오류 발생: {str(e)}")
+
+    # 메시지 전송
+    client.beta.threads.messages.create(
+        thread_id=thread_id,
+        role="user",
+        content=message_content
+    )
+
+    if logger:
+        logger.info("메시지를 스레드에 추가함")
+
+    # Assistant 실행
+    run = client.beta.threads.runs.create(
+        thread_id=thread_id,
+        assistant_id=assistant_id
+    )
+
+    if logger:
+        logger.info("Assistant 실행 요청 완료")
+
+    # 실행 완료 대기
+    while True:
+        run = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run.id)
+        if run.status == "completed":
+            break
+        elif run.status == "failed":
+            raise RuntimeError("Assistant 실행 실패")
+        time.sleep(1)
+
+    if logger:
+        logger.info("Assistant 실행 완료")
+
+    # 응답 메시지 가져오기
+    messages = list(client.beta.threads.messages.list(thread_id=thread_id, limit=20))
+    last_message = next((msg for msg in messages if msg.role == "assistant"), None)
+
+    if not last_message:
+        raise ValueError("Assistant의 응답을 찾을 수 없습니다.")
+
+    return last_message.content[0].text.value
+
+# =================================================================================================
 
 def get_langsam_output(image, model, segmentation_texts, segmentation_count):
 
@@ -128,7 +204,7 @@ def get_langsam_output(image, model, segmentation_texts, segmentation_count):
         f.write(f"logits: {logits}\n")
         f.write(f"phrases: {phrases}\n")
         f.write(f"boxes: {boxes}\n")
-        f.write(f"masks: {np.shape(masks)}\n")
+        f.write(f"masks: {masks}\n")
     print(np.shape(masks))
     _, ax = plt.subplots(1, 1 + len(masks), figsize=(5 + (5 * len(masks)), 5))
     [a.axis("off") for a in ax.flatten()]
@@ -143,7 +219,7 @@ def get_langsam_output(image, model, segmentation_texts, segmentation_count):
         colors1.append("red")
         colors2.append("cyan")
     logger.info("boxes length = "+str(count))
-
+    logger.info("boxes colors = "+str(colors1)+str(colors2))
 
 
     for i, (mask, box, phrase) in enumerate(zip(masks, boxes, phrases)):
@@ -206,6 +282,7 @@ def get_chatgpt_output(model, new_prompt, messages, role, file=sys.stdout):
             print("finish_reason:", finish_reason, file=file)
 
     messages.append({"role":"assistant", "content":new_output})
+    main.save_code_block_to_file(messages, file_name="message_blocks.txt")
 
     return messages
 
@@ -236,7 +313,8 @@ def get_xmem_output(model, device, trajectory_length):
 
         for i in range(0, trajectory_length + 1, config.xmem_output_every):
             # 설정목표로 가는 각각의 이미지를 하나씩 불러온다. config.xmem_output_every는 1이다.
-            frame = np.array(Image.open(config.rgb_image_trajectory_path.format(step=i)).convert("RGB"))
+            frame = np.array(Image.open(config.rgb_image_head_path).convert("RGB"))
+
             # 경로상의 이미지를 각각 불러와 열어준다.
 
             frame_torch, _ = image_to_torch(frame, device)
