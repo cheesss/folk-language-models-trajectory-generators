@@ -41,6 +41,54 @@ from XMem.inference.inference_core import InferenceCore
 from XMem.inference.interact.interactive_utils import image_to_torch, index_numpy_to_one_hot_torch, torch_prob_to_numpy_mask, overlay_davis
 
 
+def memory_chatgpt_output_with_image(client, thread_id, assistant_id, prompt,
+                                     image_path=None, logger=None):
+    # 텍스트만 또는 텍스트 + 이미지
+    message_content = [{"type": "text", "text": prompt}]
+
+    if image_path:
+        message_content.append({
+            "type": "image_url",
+            "image_url": {
+                "url": image_path,
+                "detail": "high"
+            }
+        })
+
+    # 메시지 생성
+    client.beta.threads.messages.create(
+        thread_id=thread_id,
+        role="user",
+        content=message_content
+    )
+
+    if logger:
+        logger.info("Message added to thread")
+
+    # Run assistant
+    run = client.beta.threads.runs.create(
+        thread_id=thread_id,
+        assistant_id=assistant_id
+    )
+
+    # Wait for completion
+    while True:
+        run = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run.id)
+        if run.status == "completed":
+            break
+        elif run.status == "failed":
+            logger.error(f"Assistant run failed: {run.last_error}")
+            raise RuntimeError("Assistant run failed")
+        time.sleep(1)
+
+    # 응답 메시지 가져오기
+    messages = list(client.beta.threads.messages.list(thread_id=thread_id, limit=20))
+    last_message = next((msg for msg in messages if msg.role == "assistant"), None)
+
+    if not last_message:
+        raise ValueError("Assistant's response not found.")
+
+    return last_message.content[0].text.value
 
 
 

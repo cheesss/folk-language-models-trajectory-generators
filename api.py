@@ -13,6 +13,12 @@ from config import CAPTURE_IMAGES, ADD_BOUNDING_CUBES, ADD_TRAJECTORY_POINTS, EX
 # 멀티프로세싱 넘버 불러오기
 from io import StringIO
 from contextlib import redirect_stdout
+import requests
+import os
+from dotenv import load_dotenv
+
+
+
 
 def save_code_block_to_file(code_block, file_name="code_blocks.txt"):
     with open(file_name, "a") as file:
@@ -43,8 +49,62 @@ class API:
         self.wrist_camera_position = None
         self.wrist_camera_orientation_q = None
         self.command = None
+# ================================================================
+    def ENVUnderstand(self):
+        '''
+        prompt 상에서 LLM에게 "실제 환경을 파악하기 위하여 이미지를 전달하는 함수"로 알려준 함수이다.
+        Pybullet camera에서 촬영한 
+        '''
+        load_dotenv("openaiAPI.env")
+        client_id = os.getenv("client_id")
+        self.logger.info(PROGRESS + "Capturing head and wrist camera images..." + ENDC)
+        self.main_connection.send([CAPTURE_IMAGES])
+        [head_camera_position, head_camera_orientation_q, wrist_camera_position, wrist_camera_orientation_q, env_connection_message] = self.main_connection.recv()
+        self.logger.info(env_connection_message)
 
+        self.head_camera_position = head_camera_position
 
+        # 이미지 업로드 기능
+        if client_id:
+            # RGB 이미지 업로드
+            headers = {'Authorization': f'Client-ID {client_id}'}
+            with open(config.rgb_image_head_path, 'rb') as f:
+                response = requests.post(
+                    'https://api.imgur.com/3/upload',
+                    headers=headers,
+                    files={'image': f}
+                )
+            data = response.json()
+            image_url = data['data']['link']
+            
+            # URL을 파일에 저장
+            with open("image_url.txt", "w") as f:
+                f.write(image_url)
+            
+            self.logger.info(f"Image URL is saved: {image_url}")
+            print(f"Image URL is saved: {image_url}")
+            return image_url
+        else:
+            print("Image URL is not saved.")
+            return None
+            
+    def get_image_url(self):
+        """저장된 이미지 URL을 반환합니다. URL 파일이 없으면 None을 반환합니다."""
+        try:
+            with open("image_url.txt", "r") as f:
+                return f.read().strip()
+        except FileNotFoundError:
+            return None
+            
+    def delete_image_url(self):
+        """저장된 이미지 URL 파일을 삭제합니다."""
+        try:
+            os.remove("image_url.txt")
+            self.logger.info("이미지 URL 파일이 삭제되었습니다.")
+            return True
+        except FileNotFoundError:
+            return False
+# ================================================================
     def detect_object(self, segmentation_text):
 
         self.logger.info(PROGRESS + "Capturing head and wrist camera images..." + ENDC)
@@ -214,7 +274,14 @@ class API:
                     object_mask[object_mask == object] = True
                     object_mask = torch.Tensor(object_mask)
 
-                    bounding_cubes, orientations = utils.get_bounding_cube_from_point_cloud(rgb_image, [object_mask], depth_array, self.head_camera_position, self.head_camera_orientation_q, object - 1)
+                    bounding_cubes, orientations = utils.get_bounding_cube_from_point_cloud(
+                        rgb_image, 
+                        [object_mask], 
+                        depth_array, 
+                        self.head_camera_position, 
+                        self.head_camera_orientation_q, 
+                        object - 1
+                    )
                     if len(bounding_cubes) == 0:
                         
                         self.logger.info("No bounding cube found: removed.")

@@ -1,0 +1,7 @@
+
+ENVUnderstand()
+
+ENVUnderstand()
+
+detect_object("can")
+
