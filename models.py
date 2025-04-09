@@ -113,29 +113,15 @@ def memory_chatgpt_output_with_image(client, thread_id, assistant_id, prompt,
                                      image_path=None, logger=None):
     message_content = [{"type": "text", "text": prompt}]
 
-    # 이미지가 제공된 경우에만 처리
     if image_path:
-        try:
-            # URL인지 로컬 경로인지 구분
-            if image_path.startswith("http://") or image_path.startswith("https://"):
-                image_url = image_path  # 그대로 사용
-            else:
-                base64_image = encode_image(image_path)
-                image_url = f"data:image/jpeg;base64,{base64_image}"
+        message_content.append({
+            "type": "image_url",
+            "image_url": {
+                "url": image_path,
+                "detail": "high"
+            }
+        })
 
-            # 이미지 메시지 추가
-            message_content.append({
-                "type": "image_url",
-                "image_url": {
-                    "url": image_url,
-                    "detail": "high"
-                }
-            })
-        except Exception as e:
-            if logger:
-                logger.warning(f"이미지 처리 중 오류 발생: {str(e)}")
-
-    # 메시지 전송
     client.beta.threads.messages.create(
         thread_id=thread_id,
         role="user",
@@ -145,28 +131,20 @@ def memory_chatgpt_output_with_image(client, thread_id, assistant_id, prompt,
     if logger:
         logger.info("메시지를 스레드에 추가함")
 
-    # Assistant 실행
     run = client.beta.threads.runs.create(
         thread_id=thread_id,
         assistant_id=assistant_id
     )
 
-    if logger:
-        logger.info("Assistant 실행 요청 완료")
-
-    # 실행 완료 대기
     while True:
         run = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run.id)
         if run.status == "completed":
             break
         elif run.status == "failed":
+            logger.error(f"Assistant 실행 실패: {run.last_error}")
             raise RuntimeError("Assistant 실행 실패")
         time.sleep(1)
 
-    if logger:
-        logger.info("Assistant 실행 완료")
-
-    # 응답 메시지 가져오기
     messages = list(client.beta.threads.messages.list(thread_id=thread_id, limit=20))
     last_message = next((msg for msg in messages if msg.role == "assistant"), None)
 

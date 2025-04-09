@@ -46,6 +46,8 @@ class API:
         self.command = None
 
 
+
+
     def detect_object(self, segmentation_text):
 
         self.logger.info(PROGRESS + "Capturing head and wrist camera images..." + ENDC)
