@@ -196,8 +196,7 @@ if __name__ == "__main__":
                                 new_prompt += "\n"
                                 error = True
 # 프린트나 계산 결과같은게 없으니까 ENVUnderstand 함수를 호출하면 new_prompt에 아무것도 없어서 자꾸 오류 난거였음...
-            if not text_string or "```python" not in text_string:
-                logger.info("There is no code block in the response from LLM.")
+            if not new_prompt:
                 new_prompt = PRINT_OUTPUT_PROMPT.replace("[INSERT PRINT STATEMENT OUTPUT]", text_string or "No response from LLM. Please send code block.")
                 new_prompt += "\n"
                 error = True
