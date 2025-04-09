@@ -104,6 +104,9 @@ if __name__ == "__main__":
     close_gripper = api.close_gripper
     task_completed = api.task_completed
     suction = api.suction
+    ENVUnderstand = api.ENVUnderstand
+    get_image_url = api.get_image_url
+    delete_image_url = api.delete_image_url
     
     # Start process
     env_process = Process(target=run_simulation_environment, name="EnvProcess", args=[args, env_connection, logger])
@@ -141,7 +144,7 @@ if __name__ == "__main__":
     # 원래 new_prompt에 디폴트 프롬프트 내용이 포함되어 들어가므로, 해당 내용을 intsructions에 넣어줘야한다. 다시 넣어줄 필요는 없다.
     # INPUT: [INSERT EE POSITION], [INSERT TASK] 이 두개가 메인프롬프트로 들어간다.
 
-    text_string = models.memory_chatgpt_output(
+    text_string = models.memory_chatgpt_output_with_image(
         client=client,
         thread_id=thread.id,
         assistant_id=assistant.id,
@@ -196,6 +199,12 @@ if __name__ == "__main__":
                                 new_prompt += "\n"
                                 error = True
                                 print(3333333333333333333333333333333333333333333333333333)
+                                # 프린트나 계산 결과같은게 없으니까 ENVUnderstand 함수를 호출하면 new_prompt에 아무것도 없어서 자꾸 오류 난거였음...
+            if not new_prompt:
+                logger.info("There is no code block in the response from LLM.")
+                new_prompt = PRINT_OUTPUT_PROMPT.replace("[INSERT PRINT STATEMENT OUTPUT]", text_string or "No response from LLM. Please send code block.")
+                new_prompt += "\n"
+                error = True
                             
             if error:
 
@@ -218,14 +227,21 @@ if __name__ == "__main__":
                     
                     
                     # =================================================================memory 기능 추가
-                    text_string = models.memory_chatgpt_output(
+                    print(f" 1 new_prompt: {new_prompt}")
+                    image_url = get_image_url()
+                    if image_url:
+                        logger.info(f"Image URL is added: {image_url}")
+                    text_string = models.memory_chatgpt_output_with_image(
                         client=client,
                         thread_id=thread.id,
                         assistant_id=assistant.id,
-                        prompt=new_prompt
+                        prompt=new_prompt,
+                        image_path=image_url,
+                        logger=logger
                     )
-
+                    _ = delete_image_url()
                     print(f"text_string: {text_string}")
+                    
                     # 아직 완료가 되지 않았고, 지금까지 한걸 요약해서 알려달라고 했다. 제대로 출력된다면 메모리 기능이 정상작동하는걸로 볼 수 있다.
                     # =================================================================
                     
@@ -262,15 +278,24 @@ if __name__ == "__main__":
                     # fail은 아니지만 not finished일때 실행된다. messages 로 s가 온다.
                     logger.info(PROGRESS + "Generating ChatGPT output..." + ENDC)
                     # messages = models.get_chatgpt_output(args.language_model, new_prompt, messages, "user")
-                    text_string = models.memory_chatgpt_output(
+                    
+                    # =================================================================
+                    
+                    print(f" 2 new_prompt: {new_prompt}")
+                    image_url = get_image_url()
+                    if image_url:
+                        logger.info(f"Image URL is added: {image_url}")
+                    text_string = models.memory_chatgpt_output_with_image(
                         client=client,
                         thread_id=thread.id,
                         assistant_id=assistant.id,
                         prompt=new_prompt,
-                        logger=logger  # 기존 로깅도 그대로 사용 가능
+                        image_path=image_url,
+                        logger=logger
                     )
-
+                    _ = delete_image_url()
                     print(f"text_string: {text_string}")
+                    # =================================================================
     
     
         # api.completed_task = True 이면 여기로 온다. 
