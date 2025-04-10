@@ -17,6 +17,7 @@ from PIL import Image
 import time
 import base64
 import main
+import requests
 
 sys.path.append("./XMem/")
 load_dotenv("openaiAPI.env")
@@ -43,6 +44,46 @@ from XMem.inference.inference_core import InferenceCore
 from XMem.inference.interact.interactive_utils import image_to_torch, index_numpy_to_one_hot_torch, torch_prob_to_numpy_mask, overlay_davis
 
 
+# ================================================================
+# gripper 작동 이미지 저장 및 imgur상에 업로드 
+def upload_multiple_images(image_paths, client_id, title=None, description=None):
+    '''
+    image_paths는 /home/ws/Desktop/VLM_memory_LMTG/language-models-trajectory-generators/girpper_image/robotiqGripper
+    이런식을 폴더 내부의 gripper 설명 이미지 경로를 받는다.
+    for문을 이용하여 path 내부에 있는 여러 이미지를 모두 업로드 한 후, 업로드 한 url을 return 해준다.
+    '''
+    image_urls = []
+    for path in image_paths:
+        try:
+            headers = {'Authorization': f'Client-ID {client_id}'}
+
+            # 기본값: 파일 이름을 title로
+            if title is None:
+                title = os.path.basename(path)
+            # 파일명에 사진의 설명을 적어줘야한다.
+            if description is None:
+                description = f"Uploaded from local path: {path}"
+
+            with open(path, 'rb') as f:
+                response = requests.post(
+                    'https://api.imgur.com/3/upload',
+                    headers=headers,
+                    data={
+                        'title': title,
+                        'description': description
+                    },
+                    files={'image': f}
+                )
+
+            data = response.json()
+            print(data)
+            url = data['data']['link']
+            # print(f"Uploaded: {path} -> {url}")
+            image_urls.append(url)
+        except Exception as e:
+            print(f"Failed to upload {path}: {str(e)}")
+    return image_urls
+# ================================================================
 
 
 
@@ -110,51 +151,72 @@ def encode_image(image_path):
 
 
 def memory_chatgpt_output_with_image(client, thread_id, assistant_id, prompt,
-                                     image_path=None, logger=None):
-    # 텍스트만 또는 텍스트 + 이미지
-    message_content = [{"type": "text", "text": prompt}]
+                                     image_paths=None, logger=None):
+    """
+    - prompt: 텍스트 프롬프트
+    - image_paths: 하나 또는 여러 개의 이미지 URL 리스트 (string 또는 list of strings)
+    """
 
-    if image_path:
-        message_content.append({
-            "type": "image_url",
-            "image_url": {
-                "url": image_path,
-                "detail": "high"
-            }
-        })
-
-    # 메시지 생성
+    # 텍스트 메시지 먼저 추가
     client.beta.threads.messages.create(
         thread_id=thread_id,
         role="user",
-        content=message_content
+        content=[{"type": "text", "text": prompt}]
     )
 
     if logger:
-        logger.info("Message added to thread")
+        logger.info("프롬프트 메시지를 스레드에 추가함")
 
-    # Run assistant
+    # 이미지 하나만 오는 경우도 리스트로 처리
+    if image_paths:
+        if isinstance(image_paths, str):
+            image_paths = [image_paths]
+
+        for image_url in image_paths:
+            client.beta.threads.messages.create(
+                thread_id=thread_id,
+                role="user",
+                content=[
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": image_url,
+                            "detail": "high"
+                        }
+                    }
+                ]
+            )
+            if logger:
+                logger.info(f"이미지 메시지를 추가함: {image_url}")
+
+    # Assistant 실행
     run = client.beta.threads.runs.create(
         thread_id=thread_id,
         assistant_id=assistant_id
     )
 
-    # Wait for completion
+    if logger:
+        logger.info("Assistant 실행 요청 완료")
+
+    # 실행 완료 대기
     while True:
         run = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run.id)
         if run.status == "completed":
             break
         elif run.status == "failed":
-            logger.error(f"Assistant run failed: {run.last_error}")
-            raise RuntimeError("Assistant run failed")
+            logger.error(f"Assistant 실행 실패: {run.last_error}")
+            raise RuntimeError("Assistant 실행 실패")
         time.sleep(1)
 
-    # 응답 메시지 가져오기
+    if logger:
+        logger.info("Assistant 실행 완료")
+
+    # 응답 가져오기
     messages = list(client.beta.threads.messages.list(thread_id=thread_id, limit=20))
     last_message = next((msg for msg in messages if msg.role == "assistant"), None)
 
     if not last_message:
-        raise ValueError("Assistant's response not found.")
+        raise ValueError("Assistant의 응답을 찾을 수 없습니다.")
 
     return last_message.content[0].text.value
 

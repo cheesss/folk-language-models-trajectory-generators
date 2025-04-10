@@ -1,2 +1,40 @@
+ENVUnderstand()
 
+//////
+
+detect_object("bottle")
+
+//////
+
+# Define the trajectory to move above the bottle
+trajectory_1 = [
+    [0.007, -1.105, 0.5, 0],  # Move directly above the bottle
+]
+
+# Execute the first trajectory
+execute_trajectory(trajectory_1)
+
+# Next, define the trajectory to rotate the gripper
+trajectory_2 = [
+    [0.007, -1.105, 0.5, 0.803],  # Rotate to align with the width of the bottle
+]
+
+# Execute the second trajectory
+execute_trajectory(trajectory_2)
+
+# Finally, define the trajectory to lower and grasp the bottle
+trajectory_3 = [
+    [0.007, -1.105, -0.166, 0.803],  # Lower to the height of the bottle and align orientation
+]
+
+# Perform a basic grasp using fingertips suitable for holding the bottle
+basic_fingertip_grasp()
+
+# Execute the third trajectory
+execute_trajectory(trajectory_3)
+
+# Mark the task as completed
+task_completed()
+
+//////
 

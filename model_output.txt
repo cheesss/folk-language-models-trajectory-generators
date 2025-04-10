@@ -1,7 +1,7 @@
-[{'scores': array([0.8031738], dtype=float32), 'labels': ['box'], 'boxes': array([[300.8032, 188.9202, 418.8783, 416.7104]], dtype=float32), 'masks': array([[[0., 0., 0., ..., 0., 0., 0.],
+[{'scores': array([0.83867973], dtype=float32), 'labels': ['bottle'], 'boxes': array([[253.01053, 222.76807, 455.27667, 370.52536]], dtype=float32), 'masks': array([[[0., 0., 0., ..., 0., 0., 0.],
         [0., 0., 0., ..., 0., 0., 0.],
         [0., 0., 0., ..., 0., 0., 0.],
         ...,
         [0., 0., 0., ..., 0., 0., 0.],
         [0., 0., 0., ..., 0., 0., 0.],
-        [0., 0., 0., ..., 0., 0., 0.]]], dtype=float32), 'mask_scores': array(0.9921875, dtype=float32)}]
+        [0., 0., 0., ..., 0., 0., 0.]]], dtype=float32), 'mask_scores': array(0.9765625, dtype=float32)}]

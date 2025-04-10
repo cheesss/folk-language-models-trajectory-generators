@@ -107,6 +107,8 @@ class API:
 # ================================================================
 
 
+# ================================================================
+
     def detect_object(self, segmentation_text):
 
         self.logger.info(PROGRESS + "Capturing head and wrist camera images..." + ENDC)
@@ -227,6 +229,49 @@ class API:
 
         self.logger.info(PROGRESS + "suction..." + ENDC)
         self.main_connection.send([SUCTION])
+
+    def scissor_fingertip_grasp(self):
+        self.logger.info(PROGRESS + "Executing scissor fingertip grasp..." + ENDC)
+        self.main_connection.send([CLOSE_GRIPPER])
+
+    def basic_fingertip_grasp(self):
+        self.logger.info(PROGRESS + "Executing basic fingertip grasp..." + ENDC)
+        self.main_connection.send([CLOSE_GRIPPER])
+
+    def basic_encompassing_grasp(self):
+        self.logger.info(PROGRESS + "Executing basic encompassing grasp..." + ENDC)
+        self.main_connection.send([CLOSE_GRIPPER])
+
+    def wide_encompassing_grasp(self):
+        self.logger.info(PROGRESS + "Executing wide encompassing grasp..." + ENDC)
+        self.main_connection.send([CLOSE_GRIPPER])
+
+    def wide_fingertip_grasp(self):
+        self.logger.info(PROGRESS + "Executing wide fingertip grasp..." + ENDC)
+        self.main_connection.send([CLOSE_GRIPPER])
+
+    def pinch_fingertip_grasp(self):
+        self.logger.info(PROGRESS + "Executing pinch fingertip grasp..." + ENDC)
+        self.main_connection.send([CLOSE_GRIPPER])
+
+    def suctionOnly(self):
+        self.logger.info(PROGRESS + "Activating suction only..." + ENDC)
+        self.main_connection.send([SUCTION])
+
+    def graspOnly(self):
+        self.logger.info(PROGRESS + "Activating grasp only..." + ENDC)
+        self.main_connection.send([CLOSE_GRIPPER])
+
+    def suctionANDgrasp(self):
+        self.logger.info(PROGRESS + "Activating suction and grasp..." + ENDC)
+        self.main_connection.send([CLOSE_GRIPPER])
+
+    def suctionRelease(self):
+        self.logger.info(PROGRESS + "Releasing suction..." + ENDC)
+        self.main_connection.send([OPEN_GRIPPER])
+
+
+
 
     def task_completed(self):
 

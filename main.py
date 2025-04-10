@@ -34,6 +34,17 @@ import os
 from dotenv import load_dotenv
 
 
+def get_image_paths_from_folder(folder_path):
+    # jpg, png, jpeg 등만 필터링
+    valid_extensions = ('.jpg', '.jpeg', '.png', '.bmp')
+    return [
+        os.path.join(folder_path, file)
+        for file in os.listdir(folder_path)
+        if file.lower().endswith(valid_extensions)
+    ]
+
+
+
 def save_code_block_to_file(code_block, file_name="code_blocks.txt"):
     with open(file_name, "a") as file:
         file.write(str(code_block))  # 코드 블록을 파일에 저장
@@ -44,6 +55,11 @@ load_dotenv("openaiAPI.env")
 api_key = os.getenv("api_key")
 # api_key가져오기
 
+
+load_dotenv("openaiAPI.env")
+imgur_client_id = os.getenv("client_id")
+
+
 if __name__ == "__main__":
 
     # openai.api_key = api_key
@@ -52,6 +68,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Main Program.")
     parser.add_argument("-lm", "--language_model", choices=["gpt-4o-mini", "gpt-4-32k", "gpt-3.5-turbo", "gpt-3.5-turbo-16k"], default="gpt-4o-mini", help="select language model")
     parser.add_argument("-r", "--robot", choices=["sawyer", "franka", "franka_suction"], default="franka", help="select robot")
+    parser.add_argument("-g", "--gripper", choices=["robotiq3Finger", "onrobot2Finger", "Suction2Finger"], default="onrobot2Finger", help="select gripper")
     parser.add_argument("-m", "--mode", choices=["default", "debug"], default="default", help="select mode to run")
     args = parser.parse_args()
     print(f"args: {args}")
@@ -81,6 +98,22 @@ if __name__ == "__main__":
     # env_connection은 pybullet상에서 env_process가 pybullet상에서 실행된 결과를 보내기 위한 파이프 끝점이다.
     
     
+    
+    # ================================================================
+    # 입력받은 gripper의 이미지를 업로드 한 후, urls를 받아온다.
+    if True:
+        valid_grippers = ["robotiq3Finger", "onrobot2Finger", "Suction2Finger"]
+        if args.gripper in valid_grippers:
+            folder_path = f"gripper_image/{args.gripper}"
+            image_paths = get_image_paths_from_folder(folder_path)
+            image_urls = models.upload_multiple_images(image_paths=image_paths, client_id=imgur_client_id)
+        else:
+            print("Gripper was not selected. Please select gripper!")
+            raise KeyboardInterrupt
+    # =================================================================
+    
+    
+    
     # =================================================================
     client = OpenAI(api_key=api_key)
     thread = client.beta.threads.create()
@@ -107,6 +140,17 @@ if __name__ == "__main__":
     ENVUnderstand = api.ENVUnderstand
     get_image_url = api.get_image_url
     delete_image_url = api.delete_image_url
+    scissor_fingertip_grasp = api.scissor_fingertip_grasp
+    basic_fingertip_grasp = api.basic_fingertip_grasp
+    basic_encompassing_grasp = api.basic_encompassing_grasp
+    wide_encompassing_grasp = api.wide_encompassing_grasp
+    wide_fingertip_grasp = api.wide_fingertip_grasp
+    pinch_fingertip_grasp = api.pinch_fingertip_grasp
+    suctionOnly = api.suctionOnly
+    graspOnly = api.graspOnly
+    suctionANDgrasp = api.suctionANDgrasp
+    suctionRelease = api.suctionRelease
+    
     
     # Start process
     env_process = Process(target=run_simulation_environment, name="EnvProcess", args=[args, env_connection, logger])
@@ -127,7 +171,7 @@ if __name__ == "__main__":
 
     error = False
 
-    new_prompt = MAIN_PROMPT.replace("[INSERT EE POSITION]", str(config.ee_start_position)).replace("[INSERT TASK]", command)
+    new_prompt = MAIN_PROMPT.replace("[INSERT EE POSITION]", str(config.ee_start_position)).replace("[INSERT TASK]", command).replace("[GRIPPER]", args.gripper)
     # 메인 프롬프트에서 비어있는 곳을 수정한다.
     # EE POSITION: config.ee_start_position, TASK: command
 
@@ -149,6 +193,7 @@ if __name__ == "__main__":
         thread_id=thread.id,
         assistant_id=assistant.id,
         prompt=new_prompt,
+        image_paths=image_urls,
         logger=logger  # 선택 사항
     )
     print(f"text_string: {text_string}")
@@ -236,7 +281,7 @@ if __name__ == "__main__":
                         thread_id=thread.id,
                         assistant_id=assistant.id,
                         prompt=new_prompt,
-                        image_path=image_url,
+                        image_paths=image_url,
                         logger=logger
                     )
                     _ = delete_image_url()
@@ -290,7 +335,7 @@ if __name__ == "__main__":
                         thread_id=thread.id,
                         assistant_id=assistant.id,
                         prompt=new_prompt,
-                        image_path=image_url,
+                        image_paths=image_url,
                         logger=logger
                     )
                     _ = delete_image_url()
