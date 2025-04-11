@@ -16,6 +16,7 @@ and select the operation most suitable for performing the instructions from AVIL
 During code planning, summarize why you chose to use the function
 
 AVAILABLE FUNCTIONS:
+Instead of assuming the object's position virtually, make the most of the given function and find it accurately.
 To ensure a clear understanding of the environment before performing any object detection or motion planning, it is highly recommended to begin your code with a call to ENVUnderstand().
 This function captures an image of the environment using the robot’s head camera and provides the visual context needed to reason effectively about the task.
 Make sure you don't define as many new functions as possible, and make the most of the functions below. Never define new functions, especially for gripper-related functions and suction functions

@@ -107,6 +107,7 @@ if __name__ == "__main__":
             folder_path = f"gripper_image/{args.gripper}"
             image_paths = get_image_paths_from_folder(folder_path)
             image_urls = models.upload_multiple_images(image_paths=image_paths, client_id=imgur_client_id)
+            time.sleep(1)
         else:
             print("Gripper was not selected. Please select gripper!")
             raise KeyboardInterrupt
@@ -118,7 +119,7 @@ if __name__ == "__main__":
     client = OpenAI(api_key=api_key)
     thread = client.beta.threads.create()
     assistant = client.beta.assistants.create(
-        name="VLM applied 6 degrees of freedom menipulator robot",
+        name="VLM applied 6 degrees of freedom manipulator robot",
         instructions="""You are a sentient AI that only writes Python code to control a robot arm. You must not execute any functions. Your only job is to plan and write code, not run it. You should produce code to control a robot 
                         arm by generating Python code which outputs a list of trajectory points for the robot arm end-effector to follow to complete a given user command.
                         Each element in the trajectory list is an end-effector pose, and should be of length 4, comprising a 3D position and a rotation value. Never try to run the code alone, just follow the instructions below.""",
@@ -224,7 +225,7 @@ if __name__ == "__main__":
                             f = StringIO()
                             with redirect_stdout(f):
                                 exec(code)
-                                print(11111111111111111111111111111111111111)
+                                # print(11111111111111111111111111111111111111)
                     # 여기서 받은 코드를 실행하는듯 하다.
                     # 만약 llm이 detect_object("box")를 실행하기로 결정한다면, 위에서 정의한 detect_object = api.detect_object가 실행된다.
                         except Exception:
@@ -233,17 +234,17 @@ if __name__ == "__main__":
                             # 에러메세지를 다시 전달한다. 
                             new_prompt += "\n"
                             error = True
-                            print(22222222222222222222222222222222222222222)
+                            # print(22222222222222222222222222222222222222222)
                         else:
                             s = f.getvalue()
                             error = False
                             if s != "" and len(s) < 2000:
-                                print(f"s is: {s}")
+                                # print(f"s is: {s}")
                                 new_prompt = PRINT_OUTPUT_PROMPT.replace("[INSERT PRINT STATEMENT OUTPUT]", s)
                                 # 여기에 출력 또는 앞 코드 실행 결과가 저장된다.
                                 new_prompt += "\n"
                                 error = True
-                                print(3333333333333333333333333333333333333333333333333333)
+                                # print(3333333333333333333333333333333333333333333333333333)
                                 # 프린트나 계산 결과같은게 없으니까 ENVUnderstand 함수를 호출하면 new_prompt에 아무것도 없어서 자꾸 오류 난거였음...
             if not new_prompt:
                 logger.info("There is no code block in the response from LLM.")

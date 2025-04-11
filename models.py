@@ -165,7 +165,8 @@ def memory_chatgpt_output_with_image(client, thread_id, assistant_id, prompt,
     )
 
     if logger:
-        logger.info("프롬프트 메시지를 스레드에 추가함")
+        # logger.info("프롬프트 메시지를 스레드에 추가함")
+        None
 
     # 이미지 하나만 오는 경우도 리스트로 처리
     if image_paths:
@@ -187,7 +188,8 @@ def memory_chatgpt_output_with_image(client, thread_id, assistant_id, prompt,
                 ]
             )
             if logger:
-                logger.info(f"이미지 메시지를 추가함: {image_url}")
+                # logger.info(f"이미지 메시지를 추가함: {image_url}")
+                None
 
     # Assistant 실행
     run = client.beta.threads.runs.create(
@@ -196,7 +198,8 @@ def memory_chatgpt_output_with_image(client, thread_id, assistant_id, prompt,
     )
 
     if logger:
-        logger.info("Assistant 실행 요청 완료")
+        # logger.info("Assistant 실행 요청 완료")
+        None
 
     # 실행 완료 대기
     while True:
@@ -209,7 +212,8 @@ def memory_chatgpt_output_with_image(client, thread_id, assistant_id, prompt,
         time.sleep(1)
 
     if logger:
-        logger.info("Assistant 실행 완료")
+        # logger.info("Assistant 실행 완료")
+        None
 
     # 응답 가져오기
     messages = list(client.beta.threads.messages.list(thread_id=thread_id, limit=20))
@@ -279,6 +283,7 @@ def get_langsam_output(image, model, segmentation_texts, segmentation_count):
         image_tensor = draw_bounding_boxes(image_tensor, box, colors=colors1, width=3)
         mask = torch.tensor(mask)
         mask = mask.bool()
+        print(f"image_tensor: {image_tensor}")
         image_tensor = draw_segmentation_masks(image_tensor, mask, alpha=0.5, colors=colors2)
         to_pil_image = transforms.ToPILImage()
         image_pil = to_pil_image(image_tensor)
