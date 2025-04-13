@@ -22,10 +22,12 @@ langsam_model = LangSAM()
 
 rgb_image_head = Image.open(config.rgb_image_head_path).convert("RGB")
 
-model_predictions, boxes, segmentation_texts = models.get_langsam_output(rgb_image_head,langsam_model, segmentation_texts=["red box"], segmentation_count=0)
+model_predictions, boxes, segmentation_texts = models.get_langsam_output(rgb_image_head,langsam_model, segmentation_texts=["bottle"], segmentation_count=0)
+print(f"model_predictions: {model_predictions}")
 
 
 masks = get_segmentation_mask(model_predictions, config.segmentation_threshold)
+print(f"masks: {masks}")
 # print(1)
 depth_image_head = Image.open(config.depth_image_head_path).convert("L")
 # print(2)
@@ -71,28 +73,6 @@ finally:
 
 
 
-# def visualize_depth_array(depth_array):
-#     rows, cols = depth_array.shape
-#     x = np.linspace(0, cols - 1, cols)
-#     y = np.linspace(0, rows - 1, rows) 
-#     x, y = np.meshgrid(x, y)
-#     fig = plt.figure(figsize=(10, 7))
-#     ax = fig.add_subplot(111, projection='3d')
-#     surface = ax.plot_surface(x, y, -depth_array, cmap='viridis', edgecolor='none')
-
-#     # 색상 바 추가
-#     fig.colorbar(surface, ax=ax, shrink=0.5, aspect=10)
-
-#     # 제목과 라벨
-#     ax.set_title('3D Surface Plot')
-#     ax.set_xlabel('X axis')
-#     ax.set_ylabel('Y axis')
-#     ax.set_zlabel('Z axis')
-
-#     plt.show()
-
-
-
 def update():
     p.stepSimulation()
     time.sleep(config.control_dt)
@@ -125,35 +105,6 @@ def check_real_size():
             print("Orientation along shorter side (length):", np.around(bounding_cubes_orientations[i][1], 3))
             print("Orientation along longer side (width):", np.around(bounding_cubes_orientations[i][0], 3), "\n")
 
-
-
-
-def draw_box_pybullet():
-    physics_client = p.connect(p.GUI)
-    p.setAdditionalSearchPath(pybullet_data.getDataPath())
-    p.resetDebugVisualizerCamera(config.camera_distance, config.camera_yaw, config.camera_pitch, config.camera_target_position)
-    p.setAdditionalSearchPath(pybullet_data.getDataPath())
-    p.setGravity(0, 0, -9.81)
-    plane = p.loadURDF("plane.urdf")
-
-    while True:
-        for bounding_cube_world_coordinates in bounding_cubes_world_coordinates:
-            p.addUserDebugLine(bounding_cube_world_coordinates[0], bounding_cube_world_coordinates[1], [0, 1, 0], lifeTime=0)
-            p.addUserDebugLine(bounding_cube_world_coordinates[1], bounding_cube_world_coordinates[2], [0, 1, 0], lifeTime=0)
-            p.addUserDebugLine(bounding_cube_world_coordinates[2], bounding_cube_world_coordinates[3], [0, 1, 0], lifeTime=0)
-            p.addUserDebugLine(bounding_cube_world_coordinates[3], bounding_cube_world_coordinates[0], [0, 1, 0], lifeTime=0)
-            p.addUserDebugLine(bounding_cube_world_coordinates[5], bounding_cube_world_coordinates[6], [0, 1, 0], lifeTime=0)
-            p.addUserDebugLine(bounding_cube_world_coordinates[6], bounding_cube_world_coordinates[7], [0, 1, 0], lifeTime=0)
-            p.addUserDebugLine(bounding_cube_world_coordinates[7], bounding_cube_world_coordinates[8], [0, 1, 0], lifeTime=0)
-            p.addUserDebugLine(bounding_cube_world_coordinates[8], bounding_cube_world_coordinates[5], [0, 1, 0], lifeTime=0)
-            p.addUserDebugLine(bounding_cube_world_coordinates[0], bounding_cube_world_coordinates[5], [0, 1, 0], lifeTime=0)
-            p.addUserDebugLine(bounding_cube_world_coordinates[1], bounding_cube_world_coordinates[6], [0, 1, 0], lifeTime=0)
-            p.addUserDebugLine(bounding_cube_world_coordinates[2], bounding_cube_world_coordinates[7], [0, 1, 0], lifeTime=0)
-            p.addUserDebugLine(bounding_cube_world_coordinates[3], bounding_cube_world_coordinates[8], [0, 1, 0], lifeTime=0)
-            p.addUserDebugPoints(bounding_cube_world_coordinates, [[0, 1, 0]] * len(bounding_cube_world_coordinates), pointSize=5, lifeTime=0)
-        update()
-
-# api.py 내부에 물체 높이 계산 코드 존재    def update(self):
 
 
 check_real_size()

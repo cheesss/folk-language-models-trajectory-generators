@@ -56,7 +56,7 @@ camera_yaw = 225.0
 camera_pitch = -30.0
 camera_target_position = [0.0, 0.6, 0.3]
 
-depth_offset = 0.03
+depth_offset = 0.1
 
 # Segmentation
 segmentation_threshold = 0.2
