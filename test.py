@@ -22,7 +22,7 @@ langsam_model = LangSAM()
 
 rgb_image_head = Image.open(config.rgb_image_head_path).convert("RGB")
 
-model_predictions, boxes, segmentation_texts = models.get_langsam_output(rgb_image_head,langsam_model, segmentation_texts=["bottle"], segmentation_count=0)
+model_predictions, boxes, segmentation_texts = models.get_langsam_output(rgb_image_head,langsam_model, segmentation_texts=["box"], segmentation_count=0)
 print(f"model_predictions: {model_predictions}")
 
 

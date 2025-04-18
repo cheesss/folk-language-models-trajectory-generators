@@ -58,12 +58,11 @@ class API:
         load_dotenv("openaiAPI.env")
         client_id = os.getenv("client_id")
         self.logger.info(PROGRESS + "Capturing head and wrist camera images..." + ENDC)
-        self.main_connection.send([CAPTURE_IMAGES])
-        [head_camera_position, head_camera_orientation_q, wrist_camera_position, wrist_camera_orientation_q, env_connection_message] = self.main_connection.recv()
-        self.logger.info(env_connection_message)
-
-        self.head_camera_position = head_camera_position
-
+        # self.main_connection.send([CAPTURE_IMAGES])
+        # [head_camera_position, head_camera_orientation_q, wrist_camera_position, wrist_camera_orientation_q, env_connection_message] = self.main_connection.recv()
+        # self.logger.info(env_connection_message)
+        _, _, _ = IntelCamera.capture_save_image()
+        
         # 이미지 업로드 기능
         if client_id:
             # RGB 이미지 업로드
@@ -238,7 +237,7 @@ class API:
         self.logger.info(PROGRESS + "Executing basic fingertip grasp..." + ENDC)
         self.main_connection.send([CLOSE_GRIPPER])
 
-    def basic_encompassing_grasp(self):
+    def encompassing_grasp(self):
         self.logger.info(PROGRESS + "Executing basic encompassing grasp..." + ENDC)
         self.main_connection.send([CLOSE_GRIPPER])
 

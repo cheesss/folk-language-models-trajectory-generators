@@ -15,10 +15,12 @@ import open3d as o3d
 from config import depth_offset
 
 depth_scale = 0.0010000000474974513
-base2cam = np.array([[ 9.97956043e-01,  1.24564979e-03,  6.38919201e-02,  5.63566259e-02],
-            [-3.78161693e-02, -7.94446176e-01,  6.06156097e-01, -1.47778554e+00],
-            [ 5.15137493e-02, -6.07333292e-01, -7.92775253e-01,  4.75763504e-01],
-            [ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  1.00000000e+00],])
+base2cam = np.array([[ 9.99932474e-01 ,-1.12025970e-02, -3.09024461e-03, -1.98069131e-01],
+                    [-5.91646230e-04  ,-3.14649407e-01,  9.49207776e-01, -1.23618219e+00],
+                    [-1.16059357e-02  ,-9.49141850e-01, -3.14634788e-01,  2.54299662e-01],
+                    [ 0.00000000e+00  , 0.00000000e+00,  0.00000000e+00,  1.00000000e+00]])
+
+
 
 
 
@@ -273,21 +275,30 @@ def get_bounding_cube_from_point_cloud(image, masks, depth_array, camera_positio
             cl, ind = pcd.remove_statistical_outlier(nb_neighbors=150, std_ratio=2.0)
             pcd = pcd.select_by_index(ind)
 
-            plane_model, _ = pcd.segment_plane(distance_threshold=0.01, ransac_n=3, num_iterations=1000)
-            normal = np.array(plane_model[:3])
-            z_axis = np.array([0.0, 0.0, 1.0])
-            v = np.cross(normal, z_axis)
-            s = np.linalg.norm(v)
-            if s >= 1e-6:
-                c = np.dot(normal, z_axis)
-                vx = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
-                R = np.eye(3) + vx + vx @ vx * ((1 - c) / (s**2))
-                pcd.rotate(R, center=(0, 0, 0))
+            # plane_model, _ = pcd.segment_plane(distance_threshold=0.01, ransac_n=3, num_iterations=1000)
+            # normal = np.array(plane_model[:3])
+            # z_axis = np.array([0.0, 0.0, 1.0])
+            # v = np.cross(normal, z_axis)
+            # s = np.linalg.norm(v)
+            # if s >= 1e-6:
+            #     c = np.dot(normal, z_axis)
+            #     vx = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
+            #     R = np.eye(3) + vx + vx @ vx * ((1 - c) / (s**2))
+            #     pcd.rotate(R, center=(0, 0, 0))
+
+            pcd.transform(base2cam)
 
             pcd_vis = pcd.paint_uniform_color([0.1, 0.8, 0.1])
-            aabb = pcd.get_axis_aligned_bounding_box()
-            aabb.color = (1, 0, 0)
-            o3d.visualization.draw_geometries([pcd_vis, aabb], window_name="Segmented PointCloud + 3D Bounding Box")
+            aabb = pcd.get_oriented_bounding_box()
+            # aabb.transform(base2cam)
+
+            aabb.color = (1, 0, 0)            
+            frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.5)
+            c_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.2)
+            c_frame.transform(base2cam)
+            o3d.visualization.draw_geometries([pcd_vis, aabb, frame, c_frame], window_name="Segmented PointCloud + 3D Bounding Box")
+
+
 
             points_np = np.asarray(pcd.points)
             max_z_coordinate = np.max(points_np[:, 2])

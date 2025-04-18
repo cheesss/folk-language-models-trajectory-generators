@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
     # Parse args
     parser = argparse.ArgumentParser(description="Main Program.")
-    parser.add_argument("-lm", "--language_model", choices=["gpt-4o-mini", "gpt-4-32k", "gpt-3.5-turbo", "gpt-3.5-turbo-16k"], default="gpt-4o-mini", help="select language model")
+    parser.add_argument("-lm", "--language_model", choices=["gpt-4o", "gpt-4-32k", "gpt-3.5-turbo", "gpt-3.5-turbo-16k"], default="gpt-4o-mini", help="select language model")
     parser.add_argument("-r", "--robot", choices=["sawyer", "franka", "franka_suction"], default="franka", help="select robot")
     parser.add_argument("-g", "--gripper", choices=["robotiq3Finger", "onrobot2Finger", "Suction2Finger"], default="onrobot2Finger", help="select gripper")
     parser.add_argument("-m", "--mode", choices=["default", "debug"], default="default", help="select mode to run")
@@ -143,7 +143,7 @@ if __name__ == "__main__":
     delete_image_url = api.delete_image_url
     scissor_fingertip_grasp = api.scissor_fingertip_grasp
     basic_fingertip_grasp = api.basic_fingertip_grasp
-    basic_encompassing_grasp = api.basic_encompassing_grasp
+    encompassing_grasp = api.encompassing_grasp
     wide_encompassing_grasp = api.wide_encompassing_grasp
     wide_fingertip_grasp = api.wide_fingertip_grasp
     pinch_fingertip_grasp = api.pinch_fingertip_grasp
@@ -209,7 +209,8 @@ if __name__ == "__main__":
             # if len(messages[-1]["content"].split("```python")) > 1:
             if "```python" in text_string:
                 # llm이 전달해준 메세지를 자른다. 
-                # code_block = messages[-1]["content"].split("```python")    
+                # code_block = messages[-1]["content"].split("```python") 
+                print(text_string)   
                 code_block = text_string.split("```python")
                 #   {"role": "assistant", "content": "```python\nprint('Hello, World!')\n```"} 꼴의 데이터에서 'Hello, World!'를 가져온다,
                 #   코드가 리턴되므로 코드 블럭이라는 변수에 저장해준다.
