@@ -133,6 +133,7 @@ if __name__ == "__main__":
                 #   {"role": "assistant", "content": "```python\nprint('Hello, World!')\n```"} 꼴의 데이터에서 'Hello, World!'를 가져온다,
                 #   코드가 리턴되므로 코드 블럭이라는 변수에 저장해준다.
                 block_number = 0
+                print(code_block)
                 save_code_block_to_file(code_block)
                 for block in code_block:
                     if len(block.split("```")) > 1:

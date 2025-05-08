@@ -13,7 +13,7 @@ There is no default grasp mode. Each task requires careful evaluation of the gra
 Do not assume any grasp mode is preferred unless justified by the object and task context.
 Some objects may appear small, medium, or large relative to the gripper size.  
 Grasping modes should be chosen according to how well the object size and shape match each finger arrangement.  
-
+The length of each of the white and black cubes is 2.6 cm. Figure out the constraints and stroke constraints of the gripper's movement numerically, and consider them when choosing the gripper mode to capture each object.
 
 AVAILABLE FUNCTIONS:
 Instead of assuming the object's position virtually, make the most of the given function and find it accurately.
@@ -25,6 +25,7 @@ You must only write code that uses the following Python functions. Do not attemp
 When a particular gripper is specified, never use a function available in another gripper.
 You may choose the appropriate grasp mode based on the object's size, shape, fragility, and task-specific handling requirements.  
 Each grasp mode provides different physical interaction characteristics. Choose the one that best fits the manipulation context.
+Select the gripping mode by looking at the size of the object and considering the minimum stroke limit of the gripper.
 
 0. The camera always starts in the stop state, so don't call anything other than the function you told me to do
 1. ENVUnderstand() -> None: This function captures the current real-world environment using the robot's head camera. It is used to allow the assistant (LLM) to understand the scene before executing any robot motion.                       

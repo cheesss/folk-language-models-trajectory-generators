@@ -16,7 +16,7 @@ from contextlib import redirect_stdout
 import requests
 import os
 from dotenv import load_dotenv
-
+import base64
 
 depth_scale = 0.0010000000474974513
 def save_code_block_to_file(code_block, file_name="code_blocks.txt"):
@@ -26,13 +26,13 @@ def save_code_block_to_file(code_block, file_name="code_blocks.txt"):
 
 class API:
 
-    def __init__(self, args, main_connection, logger, langsam_model, xmem_model, device, client, thread, assistant):
+    def __init__(self, args, main_connection, logger, langsam_model,  device, client, thread, assistant):
 
         self.args = args
         self.main_connection = main_connection
         self.logger = logger
         self.langsam_model = langsam_model
-        self.xmem_model = xmem_model
+        # self.xmem_model = xmem_model
         self.device = device
         self.client = client
         self.thread = thread
@@ -68,13 +68,18 @@ class API:
             # RGB 이미지 업로드
             headers = {'Authorization': f'Client-ID {client_id}'}
             with open(config.rgb_image_head_path, 'rb') as f:
+                url = 'https://api.imgbb.com/1/upload'
+                payload = {
+                    "key" : client_id,
+                    "image" : base64.b64encode(f.read()),
+                }
                 response = requests.post(
-                    'https://api.imgur.com/3/upload',
-                    headers=headers,
-                    files={'image': f}
+                    url,
+                    payload
                 )
+                
             data = response.json()
-            image_url = data['data']['link']
+            image_url = data['data']['image']['url']
             
             # URL을 파일에 저장
             with open("image_url.txt", "w") as f:
@@ -285,89 +290,89 @@ class API:
             [env_connection_message] = self.main_connection.recv()
             self.logger.info(env_connection_message)
 
-            self.logger.info(PROGRESS + "Generating XMem output..." + ENDC)
-            # self.logger.info(f"Trajectory length: {self.trajectory_length}")
-            # tragectory_length란 몇개의 경로지점을 생성하여 수행했는지 보여준다.
-            masks = models.get_xmem_output(self.xmem_model, self.device, self.trajectory_length)
-            # 여기서 xmem에게 이미지를 전달해준 후 성공여부를 확인한다. 
-            self.logger.info(OK + "Finished generating XMem output!" + ENDC)
+            # self.logger.info(PROGRESS + "Generating XMem output..." + ENDC)
+            # # self.logger.info(f"Trajectory length: {self.trajectory_length}")
+            # # tragectory_length란 몇개의 경로지점을 생성하여 수행했는지 보여준다.
+            # masks = models.get_xmem_output(self.xmem_model, self.device, self.trajectory_length)
+            # # 여기서 xmem에게 이미지를 전달해준 후 성공여부를 확인한다. 
+            # self.logger.info(OK + "Finished generating XMem output!" + ENDC)
 
-            num_objects = len(np.unique(masks[0])) - 1
-            # num_objects = len(np.unique(masks[0]))
-            # 여기 또 있네
+            # num_objects = len(np.unique(masks[0])) - 1
+            # # num_objects = len(np.unique(masks[0]))
+            # # 여기 또 있네
 
-            new_prompt = SUCCESS_DETECTION_PROMPT.replace("[INSERT TASK]", self.command)
-            new_prompt += "\n"
+            # new_prompt = SUCCESS_DETECTION_PROMPT.replace("[INSERT TASK]", self.command)
+            # new_prompt += "\n"
 
-            self.logger.info(PROGRESS + "Calculating object bounding cubes..." + ENDC)
+            # self.logger.info(PROGRESS + "Calculating object bounding cubes..." + ENDC)
 
-            for object in range(1, num_objects + 1):
+            # for object in range(1, num_objects + 1):
 
-                object_positions = []
-                object_orientations = []
+            #     object_positions = []
+            #     object_orientations = []
 
-                idx_offset = 0
+            #     idx_offset = 0
 
-                for i, mask in enumerate(masks):
-                    # enumeratesms mask 내부의 인덱스와 데이터를 동시에 불러온다.
+            #     for i, mask in enumerate(masks):
+            #         # enumeratesms mask 내부의 인덱스와 데이터를 동시에 불러온다.
 
-                    # rgb_image = Image.open(config.rgb_image_trajectory_path.format(step=i * config.xmem_output_every)).convert("RGB")
-                    # depth_image = Image.open(config.depth_image_trajectory_path.format(step=i * config.xmem_output_every)).convert("L")
-                    # 원본코드
+            #         # rgb_image = Image.open(config.rgb_image_trajectory_path.format(step=i * config.xmem_output_every)).convert("RGB")
+            #         # depth_image = Image.open(config.depth_image_trajectory_path.format(step=i * config.xmem_output_every)).convert("L")
+            #         # 원본코드
 
-                    rgb_image = Image.open(config.rgb_image_path.format(step=i * config.xmem_output_every)).convert("RGB")
-                    depth_image = Image.open(config.depth_image_path.format(step=i * config.xmem_output_every)).convert("L")
-                    depth_array = np.array(depth_image) / 255.
+            #         rgb_image = Image.open(config.rgb_image_path.format(step=i * config.xmem_output_every)).convert("RGB")
+            #         depth_image = Image.open(config.depth_image_path.format(step=i * config.xmem_output_every)).convert("L")
+            #         depth_array = np.array(depth_image) / 255.
 
-                    object_mask = mask.copy()
-                    object_mask[object_mask != object] = False
-                    object_mask[object_mask == object] = True
-                    object_mask = torch.Tensor(object_mask)
+            #         object_mask = mask.copy()
+            #         object_mask[object_mask != object] = False
+            #         object_mask[object_mask == object] = True
+            #         object_mask = torch.Tensor(object_mask)
 
-                    bounding_cubes, orientations = utils.get_bounding_cube_from_point_cloud(
-                        rgb_image, 
-                        [object_mask], 
-                        depth_array, 
-                        self.head_camera_position, 
-                        self.head_camera_orientation_q, 
-                        object - 1
-                    )
-                    if len(bounding_cubes) == 0:
+            #         bounding_cubes, orientations = utils.get_bounding_cube_from_point_cloud(
+            #             rgb_image, 
+            #             [object_mask], 
+            #             depth_array, 
+            #             self.head_camera_position, 
+            #             self.head_camera_orientation_q, 
+            #             object - 1
+            #         )
+            #         if len(bounding_cubes) == 0:
                         
-                        self.logger.info("No bounding cube found: removed.")
-                        idx_offset += 1
+            #             self.logger.info("No bounding cube found: removed.")
+            #             idx_offset += 1
 
-                    else:
+            #         else:
 
-                        [bounding_cube] = bounding_cubes
-                        [orientation] = orientations
-                        position = bounding_cube[4]
-                        orientation = orientation[0]
-                        orientation = np.mod(orientation + math.pi, 2 * math.pi) - math.pi
+            #             [bounding_cube] = bounding_cubes
+            #             [orientation] = orientations
+            #             position = bounding_cube[4]
+            #             orientation = orientation[0]
+            #             orientation = np.mod(orientation + math.pi, 2 * math.pi) - math.pi
 
-                        object_positions.append(position)
+            #             object_positions.append(position)
 
-                        if i == 0:
+            #             if i == 0:
 
-                            object_orientations.append(orientation)
+            #                 object_orientations.append(orientation)
 
-                        else:
+            #             else:
 
-                            previous_orientation = object_orientations[i - 1 - idx_offset]
-                            possible_orientations = np.array([np.mod(orientation + i * math.pi / 2 + math.pi, 2 * math.pi) - math.pi for i in range(4)])
-                            circular_difference = np.minimum(np.abs(possible_orientations - previous_orientation), 2 * math.pi - np.abs(possible_orientations - previous_orientation))
-                            min_index = np.argmin(circular_difference)
-                            orientation = possible_orientations[min_index]
-                            object_orientations.append(orientation)
+            #                 previous_orientation = object_orientations[i - 1 - idx_offset]
+            #                 possible_orientations = np.array([np.mod(orientation + i * math.pi / 2 + math.pi, 2 * math.pi) - math.pi for i in range(4)])
+            #                 circular_difference = np.minimum(np.abs(possible_orientations - previous_orientation), 2 * math.pi - np.abs(possible_orientations - previous_orientation))
+            #                 min_index = np.argmin(circular_difference)
+            #                 orientation = possible_orientations[min_index]
+            #                 object_orientations.append(orientation)
 
                 # new_prompt += self.segmentation_texts[object - 1] + " trajectory positions and orientations:\n"
                 # 여기서 물건의 위치를 Xmem을 이용하여 추적 후 LangSAM으로 찾고, 바운딩 박스를 다시 그려 gpt에게 다시 전달해준다. 
-                new_prompt += "".join(self.segmentation_texts[object - 1]) + " trajectory positions and orientations:\n"
-                new_prompt += "Positions:\n"
-                new_prompt += str(np.around([position for p, position in enumerate(object_positions) if p % config.xmem_lm_input_every == 0], 3)) + "\n"
-                new_prompt += "Orientations:\n"
-                new_prompt += str(np.around([orientation for o, orientation in enumerate(object_orientations) if o % config.xmem_lm_input_every == 0], 3)) + "\n"
-                new_prompt += "\n"
+            # new_prompt += "".join(self.segmentation_texts[object - 1]) + " trajectory positions and orientations:\n"
+            # new_prompt += "Positions:\n"
+            # new_prompt += str(np.around([position for p, position in enumerate(object_positions) if p % config.xmem_lm_input_every == 0], 3)) + "\n"
+            # new_prompt += "Orientations:\n"
+            # new_prompt += str(np.around([orientation for o, orientation in enumerate(object_orientations) if o % config.xmem_lm_input_every == 0], 3)) + "\n"
+            new_prompt += "\n"
                 # 여기선 SUCCESS_DETECTION_PROMPT를 쓰는데, 그냥 그대로 써도 될듯함
                 
             self.logger.info(OK + "Finished calculating object bounding cubes!" + ENDC)

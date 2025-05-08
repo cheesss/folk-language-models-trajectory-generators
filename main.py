@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
     # Parse args
     parser = argparse.ArgumentParser(description="Main Program.")
-    parser.add_argument("-lm", "--language_model", choices=["gpt-4o", "gpt-4-32k", "gpt-3.5-turbo", "gpt-3.5-turbo-16k"], default="gpt-4o-mini", help="select language model")
+    parser.add_argument("-lm", "--language_model", choices=["gpt-4o","gpt-o3"], default="gpt-4o", help="select language model")
     parser.add_argument("-r", "--robot", choices=["sawyer", "franka", "franka_suction"], default="franka", help="select robot")
     parser.add_argument("-g", "--gripper", choices=["robotiq3Finger", "onrobot2Finger", "Suction2Finger"], default="onrobot2Finger", help="select gripper")
     parser.add_argument("-m", "--mode", choices=["default", "debug"], default="default", help="select mode to run")
@@ -88,7 +88,7 @@ if __name__ == "__main__":
 
     # Load models
     langsam_model = LangSAM()
-    xmem_model = XMem(config.xmem_config, "./XMem/saves/XMem.pth", device).eval().to(device)
+    # xmem_model = XMem(config.xmem_config, "./XMem/saves/XMem.pth", device).eval().to(device)
     # 모델 로드
     
     # API set-up
@@ -130,7 +130,7 @@ if __name__ == "__main__":
     
     
     
-    api = API(args, main_connection, logger, langsam_model, xmem_model, device, client, thread, assistant)
+    api = API(args, main_connection, logger, langsam_model, device, client, thread, assistant)
 
     detect_object = api.detect_object
     execute_trajectory = api.execute_trajectory
@@ -210,7 +210,7 @@ if __name__ == "__main__":
             if "```python" in text_string:
                 # llm이 전달해준 메세지를 자른다. 
                 # code_block = messages[-1]["content"].split("```python") 
-                print(text_string)   
+                logger.info(text_string)   
                 code_block = text_string.split("```python")
                 #   {"role": "assistant", "content": "```python\nprint('Hello, World!')\n```"} 꼴의 데이터에서 'Hello, World!'를 가져온다,
                 #   코드가 리턴되므로 코드 블럭이라는 변수에 저장해준다.
@@ -226,7 +226,6 @@ if __name__ == "__main__":
                             f = StringIO()
                             with redirect_stdout(f):
                                 exec(code)
-                                # print(11111111111111111111111111111111111111)
                     # 여기서 받은 코드를 실행하는듯 하다.
                     # 만약 llm이 detect_object("box")를 실행하기로 결정한다면, 위에서 정의한 detect_object = api.detect_object가 실행된다.
                         except Exception:
@@ -235,7 +234,6 @@ if __name__ == "__main__":
                             # 에러메세지를 다시 전달한다. 
                             new_prompt += "\n"
                             error = True
-                            # print(22222222222222222222222222222222222222222)
                         else:
                             s = f.getvalue()
                             error = False
@@ -245,7 +243,6 @@ if __name__ == "__main__":
                                 # 여기에 출력 또는 앞 코드 실행 결과가 저장된다.
                                 new_prompt += "\n"
                                 error = True
-                                # print(3333333333333333333333333333333333333333333333333333)
                                 # 프린트나 계산 결과같은게 없으니까 ENVUnderstand 함수를 호출하면 new_prompt에 아무것도 없어서 자꾸 오류 난거였음...
             if not new_prompt:
                 logger.info("There is no code block in the response from LLM.")

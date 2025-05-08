@@ -1,6 +1,6 @@
-logits: [array([0.7401744], dtype=float32)]
-phrases: [['hat']]
-boxes: [array([[373.58087, 214.4289 , 610.5923 , 345.40726]], dtype=float32)]
+logits: [array([0.36116472], dtype=float32)]
+phrases: [['cube']]
+boxes: [array([[353.9309 , 346.60648, 380.91965, 381.14307]], dtype=float32)]
 masks: [array([[[0., 0., 0., ..., 0., 0., 0.],
         [0., 0., 0., ..., 0., 0., 0.],
         [0., 0., 0., ..., 0., 0., 0.],

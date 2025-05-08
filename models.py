@@ -18,6 +18,7 @@ import time
 import base64
 import main
 import requests
+from typing import List
 
 sys.path.append("./XMem/")
 load_dotenv("openaiAPI.env")
@@ -46,43 +47,42 @@ from XMem.inference.interact.interactive_utils import image_to_torch, index_nump
 
 # ================================================================
 # gripper 작동 이미지 저장 및 imgur상에 업로드 
-def upload_multiple_images(image_paths, client_id, title=None, description=None):
-    '''
-    image_paths는 /home/ws/Desktop/VLM_memory_LMTG/language-models-trajectory-generators/girpper_image/robotiqGripper
-    이런식을 폴더 내부의 gripper 설명 이미지 경로를 받는다.
-    for문을 이용하여 path 내부에 있는 여러 이미지를 모두 업로드 한 후, 업로드 한 url을 return 해준다.
-    '''
-    image_urls = []
-    for path in image_paths:
+def upload_multiple_images(image_paths: List[str], client_id: str, name_prefix: str | None = None) -> List[str]:
+    """
+    image_paths : 예) ['/path/to/img1.png', '/path/to/img2.jpg', ...]
+    api_key     : imgbb.com 에서 발급받은 API key
+    name_prefix : (선택) 이미지 이름 앞에 붙일 접두사
+
+    각 이미지를 imgbb에 업로드하고, CDN 이미지 URL을 리스트로 반환합니다.
+    """
+    upload_url  = "https://api.imgbb.com/1/upload"
+    uploaded_urls = []
+
+    for idx, path in enumerate(image_paths, 1):
         try:
-            headers = {'Authorization': f'Client-ID {client_id}'}
+            # 파일 열고 base64 인코딩
+            with open(path, "rb") as f:
+                encoded_img = base64.b64encode(f.read()).decode()
 
-            # 기본값: 파일 이름을 title로
-            if title is None:
-                title = os.path.basename(path)
-            # 파일명에 사진의 설명을 적어줘야한다.
-            if description is None:
-                description = f"Uploaded from local path: {path}"
+            # 업로드 payload
+            payload = {
+                "key": client_id,
+                "image": encoded_img,
+                "name": f"{name_prefix or os.path.splitext(os.path.basename(path))[0]}_{idx}"
+            }
 
-            with open(path, 'rb') as f:
-                response = requests.post(
-                    'https://api.imgur.com/3/upload',
-                    headers=headers,
-                    data={
-                        'title': title,
-                        'description': description
-                    },
-                    files={'image': f}
-                )
+            resp = requests.post(upload_url, data=payload)
+            resp.raise_for_status()              # HTTP 오류 발생 시 예외
 
-            data = response.json()
-            print(data)
-            url = data['data']['link']
-            # print(f"Uploaded: {path} -> {url}")
-            image_urls.append(url)
+            # imgbb 응답에서 직접 이미지 주소 추출
+            img_url = resp.json()["data"]["image"]["url"]
+            uploaded_urls.append(img_url)
+            print(f"✅ Uploaded: {path} → {img_url}")
+
         except Exception as e:
-            print(f"Failed to upload {path}: {str(e)}")
-    return image_urls
+            print(f"❌ Failed to upload {path}: {e}")
+
+    return uploaded_urls
 # ================================================================
 
 
